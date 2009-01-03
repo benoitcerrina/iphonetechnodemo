@@ -1,0 +1,3 @@
+*.mode1v3 -crlf -diff -merge
+*.pbxuser -crlf -diff -merge
+*.pbxproj -crlf -diff -merge

@@ -1,0 +1,7 @@
+build*
+www
+*.sw?
+.DS_Store
+.tb.*.tags
+*.pbxuser
+*.mode1v3
