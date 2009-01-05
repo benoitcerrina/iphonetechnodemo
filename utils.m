@@ -14,20 +14,49 @@ static void RGBtoHSV( float r, float g, float b, float *h, float *s, float *v );
 void HSVtoRGB( float *r, float *g, float *b, float h, float s, float v );
 
 
+void gradientFunc(void *info, const float * input, float * output)
+{
+	//first translate the parameters
+    GradParameters *lParams = (GradParameters *)info;
+	
+    float lProgress = *input;
+	NSCAssert(lParams->fractionNoGrad <= 1, @"Invalid parameter");
+	//there are 3 subpart of the gradient
+	float lFirstLimit = (1-lParams->fractionNoGrad)/2;
+	float lSecondLimit = (1+lParams->fractionNoGrad)/2;
+	if (lProgress < lFirstLimit)
+	{
+		lProgress /= lFirstLimit;
+		//for now no gradient just send the color back
+		for (int iIndex = 0; iIndex < 4; iIndex++) 
+			output[iIndex] = lParams->color[iIndex] * lProgress + lParams->topcolor[iIndex] * (1-lProgress);
+	}
+	else if (lProgress < lSecondLimit)
+	{
+		memcpy(output, lParams->color, 4 * sizeof(CGFloat));
+	}
+	else
+	{
+		lProgress = (lProgress - lSecondLimit) / lFirstLimit;
+		for (int iIndex = 0; iIndex < 4; iIndex++) 
+			output[iIndex] = lParams->bottomcolor[iIndex] * lProgress + lParams->color[iIndex] * (1-lProgress);
+	}
 
- void glossInterpolation(void *info, const float *input,
-							   float *output)
+}
+
+
+
+ void glossInterpolation(void *info, const float *input,float *output)
 {
     GlossParameters *params = (GlossParameters *)info;
 	
     float progress = *input;
-    
-	if (progress < 0.5)
+    float lPercent = (1- params->percentNoGrad)/2;
+	if (progress < lPercent)
     {
-        progress = progress * 2.0;
+        progress = progress / lPercent;
 		
-        progress =
-		1.0 - params->expScale * (expf(progress * -params->expCoefficient) - params->expOffset);
+        progress = 1.0 - params->expScale * (expf(progress * -params->expCoefficient) - params->expOffset);
 		
         float currentWhite = progress * (params->finalWhite - params->initialWhite) + params->initialWhite;
 		
@@ -37,11 +66,18 @@ void HSVtoRGB( float *r, float *g, float *b, float h, float s, float v );
         output[3] = params->color[3] * (1.0 - currentWhite) + currentWhite;
     }
     else
+		if (progress < 1-lPercent)
+		{
+			output[0] = params->color[0];
+			output[1] = params->color[1];
+			output[2] = params->color[2];
+			output[3] = params->color[3];
+		}
+	else
     {
-        progress = (progress - 0.5) * 2.0;
+        progress = (progress - (1 - lPercent)) / lPercent;
 		
-        progress = params->expScale *
-		(expf((1.0 - progress) * -params->expCoefficient) - params->expOffset);
+//        progress = params->expScale * (expf((1.0 - progress) * - params->expCoefficient) - params->expOffset);
 		
         output[0] = params->color[0] * (1.0 - progress) + params->caustic[0] * progress;
         output[1] = params->color[1] * (1.0 - progress) + params->caustic[1] * progress;
@@ -50,7 +86,23 @@ void HSVtoRGB( float *r, float *g, float *b, float h, float s, float v );
     }
 }
 
-
+void perceptualTopColorForColor(float *inputComponents, float *outputComponents)
+{
+    float hue, saturation, brightness, alpha;
+	
+	RGBtoHSV(inputComponents[0], inputComponents[1], inputComponents[2], &hue, &saturation, &brightness);
+	
+	
+	brightness /= 2;
+	
+    if (saturation < 1e-3)
+    {
+    }
+	else
+		hue +=0.1;
+	HSVtoRGB(&outputComponents[0], &outputComponents[1], &outputComponents[2], hue, saturation, brightness);
+	outputComponents[3] = inputComponents[3];
+}
  void perceptualCausticColorForColor(float *inputComponents, float *outputComponents)
 {
     const float CAUSTIC_FRACTION = 0.60;

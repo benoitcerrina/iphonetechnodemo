@@ -21,7 +21,19 @@ typedef struct
 		float expOffset;
 		float initialWhite;
 		float finalWhite;
+		float percentNoGrad;
 	} GlossParameters;
+typedef struct
+	{
+		float topcolor[4];
+		float color[4];
+		float bottomcolor[4];
+		float fractionNoGrad;
+	} GradParameters;
+//function based on the cocoadev article
  void glossInterpolation(void *info, const float *input, float *output);
+//benwulf gradient
+void gradientFunc(void *info, const float * input, float * output);
  void perceptualCausticColorForColor(float *inputComponents, float *outputComponents);
+void perceptualTopColorForColor(float *inputComponents, float *outputComponents);
  float perceptualGlossFractionForColor(float *inputComponents);

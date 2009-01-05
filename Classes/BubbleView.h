@@ -12,5 +12,7 @@
 
 @interface BubbleView : PathsView 
 {
+	IBOutlet UISlider * _Slider;
 }
+-(IBAction) sliderChangedValue;
 @end
